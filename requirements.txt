@@ -1,1 +1,4 @@
 d3blocks
+pandas
+numpy 
+datetime

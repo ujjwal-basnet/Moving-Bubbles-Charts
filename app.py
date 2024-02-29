@@ -1,39 +1,58 @@
-import pandas as pd 
-import numpy as np 
+import pandas as pd
+import numpy as np
+import random
+from datetime import datetime, timedelta
+from d3blocks import D3Blocks
 
-#defining time range with 5 min interval 
-time_range = pd.date_range(start = '2024-02-29 00:00:00' , end = '2024-02-29 23:59:59',freq = '5min' )
+# Function to generate random datetime within a range
+def random_datetime(start, end):
+    return start + timedelta(seconds=random.randint(0, int((end - start).total_seconds())))
 
+# Generate  100 sample data for moving bubbles
+num_samples = 40
+num_states_per_sample =100
+states = ['Eating', 'Sleeping', 'Home', 'Working', 'Traveling']
+state_probabilities = [0.3, 0.3, 0.1, 0.1, 0.2]  # Adjust probabilities for each state
+#tried with random datasets but didinot work as expected thus giving proabability 
 
-# state  
-states = ['home' , 'school' , 'work' , 'eating' , 'coffee'  , 'sleeping']
+start_date = datetime(2024, 1, 1)
+end_date = datetime(2024, 12, 31)
 
-#we are creating 5 different person and their tiem span like when they go school , work , when they eat and drink cofee and sleep
-
-#creating sample data for each individual movements 
-sample1_data ={
-    'datetime':time_range , 
-    'state' : np.random.choice(states , len(time_range))  #taking random 288 data from list 
-    
-    
-}
-
-sample2_data = {
-    'datetime' : time_range , 
-    'state' : np.random.choice(states  , len(time_range))
-}
-
-
-sample3_date =  {
-    'datetime' :time_range , 
-    'state' :np.random.choice(states , len(time_range))
-}
-
-#creating dataframe for each sample 
-df1  = pd.DataFrame(sample1_data)
-df2 = pd.DataFrame(sample2_data)
-df3 = pd.DataFrame(sample3_date)
+data = []
+for sample_id in range(1, num_samples + 1):
+    state_changes = [start_date]
+    for i in range(num_states_per_sample):
+        state_changes.append(random_datetime(state_changes[-1], end_date))
+    state_changes = sorted(state_changes)
+    for i in range(num_states_per_sample):
+        state = np.random.choice(states, p=state_probabilities)
+        data.append([state_changes[i+1], state, sample_id])
 
 
-#combining 
-df = pd.concat(df1 , df2 , df2  , ignore_index = True) 
+df = pd.DataFrame(data, columns=['datetime', 'state', 'sample_id'])
+
+# Import library
+from d3blocks import D3Blocks
+
+# Initialize D3Blocks
+d3 = D3Blocks()
+
+# Specify the sample id with the size of the node (smaller size)
+size = {sample_id: random.randint(5, 20) for sample_id in range(1, num_samples + 1)}
+
+# Specify the sample id with the color of the node
+color = {sample_id: '#{:06x}'.format(random.randint(0, 0xFFFFFF)) for sample_id in range(1, num_samples + 1)}
+
+# Make the moving bubbles
+d3.movingbubbles(df, 
+                 datetime='datetime',
+                 state='state',
+                 sample_id='sample_id',
+                 size=size,
+                 color=color,
+                 color_method='node',
+                 timedelta='minutes',
+                 speed={"slow": 30, "medium": 50, "fast": 10},
+                 filepath='/home/ujjwal/movingbubbles.html',
+                 cmap='Set2',
+                 standardize='samplewise')
